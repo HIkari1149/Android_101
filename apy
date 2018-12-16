@@ -87,93 +87,90 @@ if __name__ == '__main__':
     app.run()
 
 ////////////
-from flask import Flask,request,render_template,jsonify
-import urllib
-from urllib.request import urlopen
-import json
-import math
-import sqlite3
 
-app = Flask(__name__)
-def sql_select(lat,lng,minlat,maxlat,minlng,maxlng):
-    # dbname='/home/Hikari1149/mysite/district.db'
-    dbname='C:/Users/mac/Desktop/district.db'
-    conn = sqlite3.connect(dbname)
-    cur = conn.cursor()
-    sql="SELECT lat,lon,Field_3,Field_4,Field_5,Field_1,Field_6,Field_7 FROM district WHERE lat > {} AND lat < {} AND lon > {} AND lon < {}".format(minlat,maxlat,minlng,maxlng)
-    cur.execute(sql)
-    reslut=cur.fetchall()
-    sql2="SELECT lat,lon From cctv1 WHERE lat>{} AND lat< {} AND lon>{} AND lon <{}".format(minlat,maxlat,minlng,maxlng)
-    cur.execute(sql2)
-    res2=cur.fetchall()
-    print(reslut)
-    conn.close()
-    return reslut,res2
-def getGeoForAddress(address):
-    serviceurl = 'https://maps.googleapis.com/maps/api/geocode/json?'
-    while True:
-        if len(address) < 1:break
-        url = serviceurl + urllib.parse.urlencode({'sensor':'false','address':address,'key':'AIzaSyCjaVLvkHaNblbIMGug7xOaHUgdq-waOqE'})
-        print('Retrieving:',url)
-        uh = urllib.request.urlopen(url)
-        data = uh.read()
-        try: js = json.loads(data.decode())
-        except: js = None
-        if 'status' not in js or js['status'] != 'OK':
-            print('===Failed To Retrieve===')
-            print(data)
-            continue
-        lat = js['results'][0]['geometry']['location']['lat']
-        lng = js['results'][0]['geometry']['location']['lng']
-        return lat,lng
-def get_area(latitude, longitude, dis):
-    """
-    确定查询经纬度范围
-    :param latitude:中心纬度
-    :param longitude:中心经度
-    :param dis:半径
-    :return:(minlat, maxlat, minlng, maxlng)
-    """
-    r = 6371.137
-    dlng = 2 * math.asin(math.sin(dis / (2 * r)) / math.cos(latitude * math.pi / 180))
-    dlng = dlng * 180 / math.pi
-    dlat = dis / r
-    dlat = dlat * 180 / math.pi
-    minlat = latitude - dlat
-    maxlat = latitude + dlat
-    minlng = longitude - dlng
-    maxlng = longitude + dlng
-    return minlat, maxlat, minlng, maxlng
-@app.route('/',methods=['GET','POST'])
-def index():
-    if (request.method == 'POST'):
-        loc = request.form['location']
-        lat, lng = getGeoForAddress(loc)
-        res,res2 = sql_select(lat, lng, *get_area(lat, lng, 1.0))
-        print(request.values)
-        op = request.values.get('btn2')
-        if (op == '热力图'):
-            return render_template("Heatmap.html", loc=loc, lat=lat, lng=lng, res=res, Sz=len(res),res2=res2)
-        else:
-            return render_template("map2.html", loc=loc, lat=lat, lng=lng, res=res, Sz=len(res),res2=res2)
-    else:
-         return render_template('index2.html')
-@app.route('/display')
-def display():
-    lat=request.args.get('a',0,type=float)
-    lng=request.args.get('b',0,type=float)
-    print(lat,lng)
-    res,res2 = sql_select(lat, lng, *get_area(lat, lng, 1.0))
-    #print(res)
-    return jsonify(res)
-@app.route('/func',methods=['GET','POST'])
-def fun():
-    return render_template("query.html")
-@app.route('/test')
-def test():
-    return render_template("test1.html")
-if __name__ == '__main__':
-    app.run()
+getMylocation()
+function play(){
+ var text = "注意! 当前所在地点盗窃事件频发,请小心保管个人物品";
+ var ttsDiv = document.getElementById('bdtts_div_id');
+ var au1 = '<audio id="tts_autio_id" autoplay="autoplay">';
+ var sss = '<source id="tts_source_id" src="http://tts.baidu.com/text2audio?lan=zh&ie=UTF-8&spd=5&text='+text+'" type="audio/mpeg">';
+ var eee = '<embed id="tts_embed_id" height="0" width="0" src="">';
+ var au2 = '</audio>';
+ ttsDiv.innerHTML = au1 + sss + eee + au2;
+}
+function GetDistance( lat1,  lng1,  lat2,  lng2){
+    var radLat1 = lat1*Math.PI / 180.0;
+    var radLat2 = lat2*Math.PI / 180.0;
+    var a = radLat1 - radLat2;
+    var  b = lng1*Math.PI / 180.0 - lng2*Math.PI / 180.0;
+    var s = 2 * Math.asin(Math.sqrt(Math.pow(Math.sin(a/2),2) +
+    Math.cos(radLat1)*Math.cos(radLat2)*Math.pow(Math.sin(b/2),2)));
+    s = s *6378.137 ;// EARTH_RADIUS;
+    s = Math.round(s * 10000) / 10000;
+    return s;
+}
+function displayLocation(position) {
+    var a =position.coords.latitude;
+    var b = position.coords.longitude;
+    var div=document.getElementById("location");
+
+    div.innerHTML = "You are at Latitude: " + a + ", Longitude:" + b;
+     var mymap = L.map('mapid').setView([position.coords.latitude, position.coords.longitude], 15);
+            L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw', {
+             maxZoom: 20,
+            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, ' +
+                '<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+                'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+            id: 'mapbox.streets'
+    }).addTo(mymap);
+
+            var myIcon = L.icon({
+        iconUrl: 'http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=%E2%80%A2|e85141&chf=a,s,ee00FFFF',
+        iconSize: [15, 20],
+        iconAnchor: [22, 94],
+        popupAnchor: [-3, -76],
+        shadowSize: [68, 95],
+        shadowAnchor: [22, 94]
+    });
+    $.ajax({
+                type: 'GET',
+                url: '/display',
+                data:{
+                  a:a,
+                  b:b
+                },
+                dataType: 'JSON',
+                }).done(function (data) {
+         var marker = L.marker([a, b]).addTo(mymap);
+         var l =data.length,len=0;
+            for (var i = 0; i < l; i++) {
+                var d=GetDistance(a,b,data[i][0],data[i][1]);
+                if(d<=1) {
+                    var marker = L.marker([data[i][0], data[i][1]], {icon: myIcon}).addTo(mymap);
+                    len++;
+                }
+            }
+
+           //L.circle([a,b],{color:'#FF0000',fillColor:'#FF0000',radius:1000,fillOpacity:1}).addTo(mymap);
+        L.circle([a, b], {radius: 1000}).addTo(mymap);
+
+            div.innerHTML="过去3年来该地点附近发生"+len+"件盗窃事件";
+        if(len>10) {
+            alert("该地点附近发生的盗窃事件超出平均值,请小心保管个人贵重物品");
+            play();
+        }
+
+        })
+}
+function getMylocation(){
+    if(navigator.geolocation){
+        navigator.geolocation.getCurrentPosition(displayLocation);
+    }
+    else{
+        alert("Oops , no geolocation support");
+    }
+}
+
 /////
 <!doctype html>
 <html lang="en">
